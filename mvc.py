@@ -1,14 +1,5 @@
 import cv2
 import numpy as np 
-    
-
-def MVC(boundPoints, polygonMask, srcImg):
-    col_arr = np.arange(srcImg.shape[0])
-    col_arr = np.transpose(np.tile(col_arr, (srcImg.shape[1], 1)))
-    row_arr = np.arange(srcImg.shape[1]).reshape(1, -1)
-    row_arr = np.tile(row_arr, (srcImg.shape[0], 1))
-    pos = np.stack([col_arr, row_arr], )
-    
 
 def boundedPoint(selectedPoints):
     lineVecs = selectedPoints[1:] - selectedPoints[:-2]
@@ -18,6 +9,17 @@ def boundedPoint(selectedPoints):
         newPoints += [i in range(int(l))] / l * v + p
     newPoints += [selectedPoints[-1]]
     return newPoints 
+
+def blend(selectedPoints, srcImg, dstImg):
+    selectedPoints = boundedPoint(selectedPoints)
+    polygonMask = cv2.fillPoly(np.zeros_like(srcImg), selectedPoints, (255, 255, 255))
+    r, c = np.where(polygonMask == (255, 255, 255))
+
+    roiMat = polygonMask[(r, c)] # N x 1 matrix
+    boundMat = np.array(selectedPoints) # M x 1 matrix
+    MVC = np.zeros((len(r), len(selectedPoints)), dtype=float)
+
+    
 
 
 
