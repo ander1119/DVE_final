@@ -25,10 +25,12 @@ def blend(selectedPoints, srcImg, dstImg):
     roiPosMat = np.column_stack((r, c)) # N x 1 matrix
     boundMat = np.array(selectedPoints) # M x 1 matrix
 
-    vec1 = boundMat[:-1, np.newaxis,:] - roiPosMat[np.newaxis,:,:]
-    vec2 = boundMat[1:, np.newaxis,:] - roiPosMat[np.newaxis,:,:]
-
-    print(vec1.shape)
+    print(roiPosMat.shape, boundMat.shape)
+    for pos in roiPosMat:
+        vec = boundMat - pos
+        v1, v2 = vec[:-1], vec[1:]
+        cosAng = (v1[:,0] * v2[:,0] + v1[:,1] * v2[:,1]) / (v1[:,0]**2+v1[:,1]**2)**(1/2) / (v2[:,0]**2+v2[:,1]**2)**(1/2)
+        # print(cosAng)
 
 if __name__ == "__main__":
     selectedPoints = [[187, 738], [91, 533], [90, 224], [143, 104], [317, 4], [521, 93], [592, 303], [553, 544], [407, 771], [271, 770], [187, 738]]
