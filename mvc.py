@@ -22,12 +22,13 @@ def blend(selectedPoints, srcImg, dstImg):
     cv2.fillPoly(polygonMask, [selectedPoints], (255, 255, 255))
     row, col = np.where(np.all(polygonMask == (255, 255, 255), axis=-1))
 
-    roiValueMat = srcImg[(row, col)] 
+    roiValueMat = srcImg[(row, col)]
     roiPosMat = np.column_stack((row, col)) # N x 1 matrix
     boundMat = np.array(selectedPoints) # M x 1 matrix
 
     # M = np.expand_dims(roiPosMat, axis=1) - boundMat[:,:]
 
+    # MVC.shape = (N, M-1)
     MVC = np.zeros((roiPosMat.shape[0], boundMat.shape[0]-1))
     for i, pos in enumerate(tqdm(roiPosMat)):
         vec = boundMat - pos
@@ -44,31 +45,14 @@ def blend(selectedPoints, srcImg, dstImg):
         MVC[i] = MVC[i] / MVC[i].sum()
 
     offset = np.array([(dstImg.shape[0] - srcImg.shape[0]) // 2, (dstImg.shape[1] - srcImg.shape[1]) // 2])
+    print(f'offset: {offset}')
 
-    # difference between target image and source image
     # diff.shape = (M, 3)
-    diff = dstImg[boundMat[:-1,1] + offset[0],boundMat[:-1,0] + offset[1],:] - srcImg[boundMat[:-1,1],boundMat[:-1,0],:]
-
-    # transferedSelectedPoints = boundedPoint(selectedPoints + offset)
-    # polygonMask = np.zeros_like(dstImg)
-    # cv2.fillPoly(polygonMask, [transferedSelectedPoints], (255, 255, 255))
-
-    # r = np.zeros_like(dstImg)
-
-    # for i in range(len(boundMat)):
-    #     r += diff[i] * MVC[i]
-
-    r = MVC @ diff  
-    print(row.shape, roiValueMat.shape, r.shape)
-
-    for ri, ci, v, dif in zip(row, col, roiValueMat, r):
-        # print(v+dif)
-        # print(ri+offset[0], ci+offset[1])
-        dstImg[ri+offset[0], ci+offset[1]] = v + dif
+    diff = dstImg[boundMat[:-1,1] + offset[0],boundMat[:-1,0] + offset[1]].astype(np.float32) - srcImg[boundMat[:-1,1],boundMat[:-1,0]].astype(np.float32)
+    r = MVC @ diff
+    dstImg[row+offset[0], col+offset[1]] = np.minimum(np.maximum(roiValueMat + r, 0), 255)
 
     return dstImg
-
-    # return dstImg * (1 - polygonMask) + polygonMask * (srcImg + r)
 
 if __name__ == "__main__":
     selectedPoints = [[187, 738], [91, 533], [90, 224], [143, 104], [317, 4], [521, 93], [592, 303], [553, 544], [407, 771], [271, 770], [187, 738]]
@@ -79,9 +63,4 @@ if __name__ == "__main__":
     cv2.imwrite("image/result.png", ret)
     # plt.imshow(ret)
     # plt.show()
-    
-
-
-
-
         
