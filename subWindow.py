@@ -1,15 +1,12 @@
 import cv2
 import tkinter as tk
 import numpy as np
-import multiprocessing
 
-from queue import Queue
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter.ttk import Notebook
 from PIL import Image, ImageTk, ImageGrab
 from popUpWindow import *
-from mvc import *
 
 class subWindow(tk.Frame):
     def __init__(self, parent, fileName):
@@ -35,13 +32,6 @@ class subWindow(tk.Frame):
         self.act = None
         self.selectedPoints = None
         self.linesId = None
-
-        self.row = None
-        self.col = None
-        self.polygonMask = None
-        self.roiPosMat = None
-        self.boundMat = None
-
 
     def select(self):
         def reset(event):  
@@ -74,16 +64,6 @@ class subWindow(tk.Frame):
                 self.canvas.unbind("<ButtonPress-3>") 
                 self.canvas.unbind("<Motion>") 
                 self.canvas.unbind("<ButtonPress-1>")
-
-                self.selectedPoints = boundedPoint(self.selectedPoints)
-                self.polygonMask = np.zeros_like(self.imageCv)
-                cv2.fillPoly(self.polygonMask, [self.selectedPoints], (255, 255, 255))
-                self.row, self.col = np.where(np.all(self.polygonMask == (255, 255, 255), axis=-1))
-
-                # self.roiValueMat = srcImg[(row, col)]
-                self.roiPosMat = np.column_stack((self.row, self.col)) # N x 1 matrix
-                self.boundMat = np.array(self.selectedPoints) # M x 1 matrix
-
             else:
                 self.selectedPoints.append([event.x, event.y])
                 self.act = event.widget.create_line(x0, y0, event.x, event.y, fill="red", dash=(4, 4), width=3) 
