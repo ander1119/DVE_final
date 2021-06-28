@@ -13,7 +13,24 @@ def boundedPoint(selectedPoints):
         newPoints += tmp
     newPoints += [list(selectedPoints[-1])]
     # print(newPoints)
-    return np.array(newPoints) 
+    return np.array(newPoints)
+
+def threadMvcCompute(start, end, roiPosMat, boundMat, q):
+    ret = np.zeros((end-start, boundMat.shape[0]-1))
+    for i in range(start, end):
+        vec = boundMat - roiPosMat[i]
+        v1, v2 = vec[:-1], vec[1:]
+        cosAng = (v1[:,0] * v2[:,0] + v1[:,1] * v2[:,1]) / (v1[:,0]**2+v1[:,1]**2)**(1/2) / (v2[:,0]**2+v2[:,1]**2)**(1/2)
+        ang = np.nan_to_num(np.arccos(cosAng))
+        tanHalfAng = np.tan(ang/2)
+        tanHalfAng = np.append(tanHalfAng, [tanHalfAng[-1]])
+
+        w_numerator = tanHalfAng[1:] + tanHalfAng[:-1]
+        w_denominator = (v1[:,0]**2 + v1[:,1]**2) ** (1/2)
+
+        ret[i-start] = np.nan_to_num(w_numerator / w_denominator)
+        ret[i-start] = ret[i-start] / ret[i-start].sum()
+    q.put(ret)
 
 def blend(selectedPoints, srcImg, dstImg):
     selectedPoints = np.array(selectedPoints)
