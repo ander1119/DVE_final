@@ -1,7 +1,9 @@
 import cv2
 import numpy as np 
 import matplotlib.pyplot as plt
+import matplotlib.tri as mtri
 from tqdm import tqdm
+from adaptmesh import triangulate
 
 def boundedPoint(selectedPoints):
     lineVecs = selectedPoints[1:] - selectedPoints[:-1]
@@ -54,13 +56,65 @@ def blend(selectedPoints, srcImg, dstImg):
 
     return dstImg
 
+def blendOptimized(selectedPoints, srcImg, dstImg):
+    selectedPoints = np.array(selectedPoints)
+    m = triangulate(selectedPoints)
+    print(f'There are {m.p.shape[1]} verticies')
+    print(f'There are {m.t.shape[1]} tringular')
+
+    points = m.p.astype(int)
+    triangles = m.t.transpose()
+
+    row, col = points[1], points[0]
+    roiPosMat = np.column_stack((row, col)) # K x 1 matrix
+    boundMat = np.array(selectedPoints) # M x 1 matrix
+
+    # MVC.shape = (N, M-1)
+    M = len(boundMat)
+    N = len(roiPosMat)
+    MVC = np.zeros((N, M), dtype=np.float32)
+    for i, pos in enumerate(roiPosMat):
+        v1 = boundMat - pos
+        v2 = np.roll(v1, -1, axis=0)
+        cosAng = np.einsum('ij,ij->i', v1, v2) / (np.linalg.norm(v1, axis=1) * np.linalg.norm(v2, axis=1))
+        ang = np.nan_to_num(np.arccos(cosAng))
+        tanHalfAng = np.tan(ang/2.0)
+
+        w_numerator = tanHalfAng + np.roll(tanHalfAng, 1, axis=0)
+        w_denominator = np.linalg.norm(v1)
+
+        MVC[i] = np.nan_to_num(w_numerator / w_denominator)
+        MVC[i] = MVC[i] / MVC[i].sum()
+
+    offset = np.array([(dstImg.shape[0] - srcImg.shape[0]) // 2, (dstImg.shape[1] - srcImg.shape[1]) // 2])
+    print(f'offset: {offset}')
+
+    # diff.shape = (M-1, 3)
+    diff = dstImg[boundMat[:,1] + offset[0],boundMat[:,0] + offset[1]].astype(np.float32) - srcImg[boundMat[:,1],boundMat[:,0]].astype(np.float32)
+    # r.shape = (K, 3)
+    r = MVC @ diff
+
+    polygonMask = np.zeros_like(dstImg)
+    cv2.fillPoly(polygonMask, [selectedPoints], (255, 255, 255))
+    row, col = np.where(np.all(polygonMask == (255, 255, 255), axis=-1))
+    roiValueMat = srcImg[row, col]
+    
+    triang = mtri.Triangulation(points[0], points[1], triangles)
+    for channel in range(3):
+        interp_lin = mtri.LinearTriInterpolator(triang, r[:,channel])
+        zi_lin = interp_lin(col, row)
+        dstImg[row+offset[0], col+offset[1], channel] = np.minimum(np.maximum(roiValueMat[:,channel] + zi_lin, 0), 255)
+
+    return dstImg
+
 if __name__ == "__main__":
     selectedPoints = [[187, 738], [91, 533], [90, 224], [143, 104], [317, 4], [521, 93], [592, 303], [553, 544], [407, 771], [271, 770], [187, 738]]
+    selectedPoints2 = [[187, 738], [91, 533], [90, 224], [143, 104], [317, 4], [521, 93], [592, 303], [553, 544], [407, 771], [271, 770]]
     srcImg = cv2.imread("./image/style1.png")
     dstImg = cv2.imread("./image/style2.png")
     print('src:', srcImg.shape, 'dst:', dstImg.shape)
-    ret = blend(selectedPoints, srcImg, dstImg)
+
+    # ret = blend(selectedPoints, srcImg, dstImg)
+    ret = blendOptimized(selectedPoints2, srcImg, dstImg)
     cv2.imwrite("image/result.png", ret)
-    # plt.imshow(ret)
-    # plt.show()
         
