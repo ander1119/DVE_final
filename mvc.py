@@ -25,9 +25,6 @@ def blend(selectedPoints, srcImg, dstImg):
     roiValueMat = srcImg[(row, col)]
     roiPosMat = np.column_stack((row, col)) # N x 1 matrix
     boundMat = np.array(selectedPoints) # M x 1 matrix
-    M = len(boundMat)
-    N = len(roiPosMat)
-    print(f'M={M}, N={N}')
 
     # M = np.expand_dims(roiPosMat, axis=1) - boundMat[:,:]
 
@@ -52,10 +49,9 @@ def blend(selectedPoints, srcImg, dstImg):
 
     # diff.shape = (M, 3)
     diff = dstImg[boundMat[:-1,1] + offset[0],boundMat[:-1,0] + offset[1]].astype(np.float32) - srcImg[boundMat[:-1,1],boundMat[:-1,0]].astype(np.float32)
-
     r = MVC @ diff
-    
     dstImg[row+offset[0], col+offset[1]] = np.minimum(np.maximum(roiValueMat + r, 0), 255)
+
     return dstImg
 
 if __name__ == "__main__":
