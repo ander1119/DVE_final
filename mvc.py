@@ -49,9 +49,9 @@ def blend(selectedPoints, srcImg, dstImg):
     # diff.shape = (M, 3)
     diff = dstImg[boundMat[:-1,1] + offset[0],boundMat[:-1,0] + offset[1],:] - srcImg[boundMat[:-1,1],boundMat[:-1,0],:]
 
-    transferedSelectedPoints = boundedPoint(selectedPoints + offset)
-    polygonMask = np.zeros_like(dstImg)
-    cv2.fillPoly(polygonMask, [transferedSelectedPoints], (255, 255, 255))
+    # transferedSelectedPoints = boundedPoint(selectedPoints + offset)
+    # polygonMask = np.zeros_like(dstImg)
+    # cv2.fillPoly(polygonMask, [transferedSelectedPoints], (255, 255, 255))
 
     # r = np.zeros_like(dstImg)
 
@@ -61,8 +61,6 @@ def blend(selectedPoints, srcImg, dstImg):
     r = MVC @ diff  
     print(row.shape, roiValueMat.shape, r.shape)
 
-
-    
     for ri, ci, v, dif in zip(row, col, roiValueMat, r):
         # print(v+dif)
         # print(ri+offset[0], ci+offset[1])
