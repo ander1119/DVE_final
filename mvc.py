@@ -94,42 +94,10 @@ def mvcCompute(roiPosMat, boundMat):
     return MVC
 
 def blendOptimized(boundMat, selectedPoints, offset, srcImg, dstImg, points, triangles ,MVC):
-    # selectedPoints = np.array(selectedPoints)
-    # m = triangulate(selectedPoints)
-    # print(f'There are {m.p.shape[1]} verticies')
-    # print(f'There are {m.t.shape[1]} tringular')
-
-    # points = m.p.astype(int)
-    # triangles = m.t.transpose()
-
-    # row, col = points[1], points[0]
-    # roiPosMat = np.column_stack((row, col)) # K x 1 matrix
-    # boundMat = np.array(selectedPoints) # M x 1 matrix
-
-    # # MVC.shape = (N, M-1)
-    # M = len(boundMat)
-    # N = len(roiPosMat)
-    # MVC = np.zeros((N, M), dtype=np.float32)
-    # for i, pos in enumerate(roiPosMat):
-    #     v1 = boundMat - pos
-    #     v2 = np.roll(v1, -1, axis=0)
-    #     cosAng = np.einsum('ij,ij->i', v1, v2) / (np.linalg.norm(v1, axis=1) * np.linalg.norm(v2, axis=1))
-    #     ang = np.nan_to_num(np.arccos(cosAng))
-    #     tanHalfAng = np.tan(ang/2.0)
-
-    #     w_numerator = tanHalfAng + np.roll(tanHalfAng, 1, axis=0)
-    #     w_denominator = np.linalg.norm(v1)
-
-    #     MVC[i] = np.nan_to_num(w_numerator / w_denominator)
-    #     MVC[i] = MVC[i] / MVC[i].sum()
-
-    # offset = np.array([(dstImg.shape[0] - srcImg.shape[0]) // 2, (dstImg.shape[1] - srcImg.shape[1]) // 2])
-    # print(f'offset: {offset}')
-
     # diff.shape = (M-1, 3)
     diff = dstImg[boundMat[:,1] + offset[0],boundMat[:,0] + offset[1]].astype(np.float32) - srcImg[boundMat[:,1],boundMat[:,0]].astype(np.float32)
+    
     # r.shape = (K, 3)
-
     # print(MVC.shape, diff.shape)
     r = MVC @ diff
 
